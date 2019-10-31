@@ -18,6 +18,15 @@ function Display()
     document.getElementById('display').value = value;
 }
 
+function Clear()
+{
+    value = 0;
+    x = 0;
+    y = 0;
+    operation = '';
+    Display();
+}
+
 function NumClick(n)
 {
     if (value == 0)
@@ -153,7 +162,7 @@ body  {
         <input type="text" id="display" readonly="1" value="">
     </div>
     <div>
-        <button class="calc1" onclick="">?</button>
+        <button class="calc1" onclick="Clear();">C</button>
         <button class="calc1" onclick="">?</button>
         <button class="calc1" onclick="">?</button>
         <button class="calc1" onclick="">?</button>
