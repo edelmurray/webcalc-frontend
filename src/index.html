@@ -12,6 +12,7 @@ let operation = '';
 
 let addURL = "http://add.webcalc.qpc.hal.davecutting.uk";
 let minusURL = "http://subtract.webcalc.qpc.hal.davecutting.uk";
+let multiplyURL = "http://multiply.webcalc.qpc.hal.davecutting.uk";
 
 function Display()
 {
@@ -66,6 +67,17 @@ function Minus()
     Display();
 }
 
+function Multiply(){
+  if (operation != '')
+        Equals();
+
+    x = value;
+    value = 0;
+    operation = '*';
+
+    Display();
+}
+
 function Equals()
 {
     if (operation == '')
@@ -110,6 +122,22 @@ function Equals()
         xhttp.open("GET",minusURL+"?x="+x+"&y="+y);
         xhttp.send();
 
+     else if (operation == '*')
+    {
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var j = JSON.parse(this.response);
+                x=0;
+                y=0;
+                operation='';
+                value = j.answer;
+                Display();
+            }
+        };
+
+        xhttp.open("GET",multiplyURL+"?x="+x+"&y="+y);
+        xhttp.send();
         return;
     }
 }
@@ -187,7 +215,7 @@ body  {
     </div>
     <div>
         <button class="calc1" onclick="NumClick(0);">0</button>
-        <button class="calc1" onclick="">?</button>
+        <button class="calc1" onclick="Multiply();">*</button>
         <button class="calc1" onclick="">?</button>
         <button class="calc1" onclick="">?</button>
     </div>
