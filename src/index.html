@@ -2,21 +2,44 @@
 <html>
 <head>
 <title>WebCalc</title>
-
-<script type="text/javascript">
+<script type="text/javascript", async="async">
 
 let value = 0;
 let x = 0;
 let y = 0;
 let operation = '';
 
-let addURL = "http://add.webcalc.40146762.qpc.hal.davecutting.uk";
-let minusURL = "http://subtract.webcalc.40146762.qpc.hal.davecutting.uk";
-let multiplyURL = "http://multiply.webcalc.40146762.qpc.hal.davecutting.uk";
+let url = "http://proxy.webcalc.40146762.qpc.hal.davecutting.uk"
 
-function Display()
+//function http_error_handler(error)
+  //  return error.code
+//https://stackoverflow.com/questions/3710204/how-to-check-if-a-string-is-a-valid-json-string-in-javascript-without-using-try
+function tryParseJSON (jsonString){
+    try {
+        var o = JSON.parse(jsonString);
+
+        // Handle non-exception-throwing cases:
+        // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
+        // but... JSON.parse(null) returns null, and typeof null === "object", 
+        // so we must check for that, too. Thankfully, null is falsey, so this suffices:
+        if (o && typeof o === "object") {
+            return o;
+        }
+    }
+    catch (e) {
+        throw Http.error
+    }
+
+    return false;
+};
+
+ function Display()
 {
+   try {
     document.getElementById('display').value = value;
+   } catch (error) {
+       console.log(error);
+   } 
 }
 
 function Clear()
@@ -28,7 +51,7 @@ function Clear()
     Display();
 }
 
-function NumClick(n)
+async function NumClick(n)
 {
     if (value == 0)
         value = n;
@@ -38,27 +61,27 @@ function NumClick(n)
         value += n;
     }
 
-    Display();
+    await Display();
 }
 
-function Plus()
+async function Plus()
 {
     // if we have an outstanding operation resolve it
     if (operation != '')
-        Equals();
+     Equals();
 
     x = value;
     value = 0;
     operation = '+';
 
-    Display();
+    await Display();
 }
 
 function Minus()
 {
     // if we have an outstanding operation resolve it
     if (operation != '')
-        Equals();
+     Equals();
 
     x = value;
     value = 0;
@@ -75,10 +98,43 @@ function Multiply(){
     value = 0;
     operation = '*';
 
-    Display();
+     Display();
 }
 
-function Equals()
+function Divide(){
+  if (operation != '')
+        Equals();
+
+    x = value;
+    value = 0;
+    operation = '÷';
+
+     Display();
+}
+
+function Exponent(){
+  if (operation != '')
+         Equals();
+
+    x = value;
+    value = 0;
+    operation = 'x^y';
+
+     Display();
+}
+
+function Modulus(){
+  if (operation != '')
+         Equals();
+
+    x = value;
+    value = 0;
+    operation = '%';
+
+     Display();
+}
+
+async function Equals()
 {
     if (operation == '')
         return;
@@ -87,11 +143,11 @@ function Equals()
 
     if (operation == '+')
     {
-        //let ans = x+y; // nah - too easy :)
         let xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
+        try{
+            xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                var j = JSON.parse(this.response);
+                var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
@@ -100,17 +156,21 @@ function Equals()
             }
         };
 
-        xhttp.open("GET",addURL+"?x="+x+"&y="+y);
-        xhttp.send();
-
+        xhttp.open("GET",url+"/add"+"?x="+x+"&y="+y);
+        await xhttp.send();
+    }
+    catch(error){
+        console.log(error);
+    }
         return;
     }
     else if (operation == '-')
     {
         let xhttp = new XMLHttpRequest();
+        try{
         xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                var j = JSON.parse(this.response);
+                var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
@@ -119,17 +179,21 @@ function Equals()
             }
         };
 
-        xhttp.open("GET",minusURL+"?x="+x+"&y="+y);
+        xhttp.open("GET",url+"/subtract"+"?x="+x+"&y="+y);
         xhttp.send();
+    }
+    catch(error){
+        console.log(error);
+    }
         return;
     }
-
      else if (operation == '*')
     {
         let xhttp = new XMLHttpRequest();
+        try{
         xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                var j = JSON.parse(this.response);
+                var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
@@ -138,8 +202,81 @@ function Equals()
             }
         };
 
-        xhttp.open("GET",multiplyURL+"?x="+x+"&y="+y);
+         xhttp.open("GET",url+"/multiply"+"?x="+x+"&y="+y);
         xhttp.send();
+    }
+    catch(error){
+        console.log(error);
+    }
+        return;
+    }
+    else if (operation == '÷')
+    {
+        let xhttp = new XMLHttpRequest();
+        try{
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var j = tryParseJSON(this.response)
+                x=0;
+                y=0;
+                operation='';
+                value = j.answer;
+                Display();
+            }
+        };
+
+         xhttp.open("GET",url+"/divide"+"?x="+x+"&y="+y);
+        xhttp.send();
+    }
+    catch(error){
+        console.log(error);
+    }
+        return;
+    }
+    else if (operation == 'x^y')
+    {
+        let xhttp = new XMLHttpRequest();
+        try{
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var j = tryParseJSON(this.response)
+                x=0;
+                y=0;
+                operation='';
+                value = j.answer;
+                Display();
+            }
+        };
+
+         xhttp.open("GET",url+"/exp"+"?x="+x+"&y="+y);
+        xhttp.send();
+    }
+    catch(error){
+        console.log(error);
+    }
+        return;
+    }
+    else if (operation == '%')
+    {
+        let xhttp = new XMLHttpRequest();
+        try{
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var j = tryParseJSON(this.response)
+                x=0;
+                y=0;
+                operation='';
+                value = j.answer;
+                Display();
+            }
+        };
+
+         xhttp.open("GET",url+"/divide"+"?x="+x+"&y="+y);
+        xhttp.send();
+    }
+    catch(error){
+        console.log(error);
+    }
         return;
     }
 }
@@ -157,6 +294,14 @@ body  {
     font-family: Calibri, sans-serif;
     font-weight: lighter;
     color: #505050;
+    margin: 0.5em;
+}
+
+#result
+{
+    font-family: Calibri, sans-serif;
+    font-weight: lighter;
+    color: #453b7e;
     margin: 0.5em;
 }
 
@@ -188,14 +333,15 @@ body  {
     <div id="logo">
         Casidave Calcutron
     </div>
+    <div id="result"> Prev Result </div>
     <div>
         <input type="text" id="display" readonly="1" value="">
     </div>
     <div>
         <button class="calc1" onclick="Clear();">C</button>
-        <button class="calc1" onclick="">?</button>
-        <button class="calc1" onclick="">?</button>
-        <button class="calc1" onclick="">?</button>
+        <button class="calc1" onclick="Modulus()">%</button>
+        <button class="calc1" onclick="PrevResult()">SavedResult</button>
+        <button class="calc1" onclick="Save()">Save</button>
     </div>
     <div>
         <button class="calc1" onclick="NumClick(7);">7</button>
@@ -218,8 +364,8 @@ body  {
     <div>
         <button class="calc1" onclick="NumClick(0);">0</button>
         <button class="calc1" onclick="Multiply();">*</button>
-        <button class="calc1" onclick="">?</button>
-        <button class="calc1" onclick="">?</button>
+        <button class="calc1" onclick="Divide()">÷</button>
+        <button class="calc1" onclick="Exponent()">x^y</button>
     </div>
 </div>
 </body>
