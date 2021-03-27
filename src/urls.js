@@ -3,7 +3,7 @@ var url_paths = {
     subtract  : "subtract/",
     multiply  : "multiply/",
     divide  : "divide/",
-    exponent  : "exp/",
+    exponent  : "exponent/",
     modulus  : "modulus/",  
   };
 var proxy_list = ['http://proxy.40146762.qpc.hal.davecutting.uk/',
