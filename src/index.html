@@ -2,18 +2,45 @@
 <html>
 <head>
 <title>WebCalc</title>
+<script type="text/javascript" src="urls.js"></script>
 <script type="text/javascript", async="async">
 
 let value = 0;
 let x = 0;
 let y = 0;
 let operation = '';
+let error = '';
 
-let url = "http://proxy.webcalc.40146762.qpc.hal.davecutting.uk"
+//loading in proxies from urls.js, paths loaded in and used in xml request 
+var aliveurls = proxy_list;
+var deadurls = []
+var url = ''
+
+function removeFromAlive(url_){
+    for (let index = 0; index < aliveurls.length; index++) {
+        if (aliveurls[index]==(url_)) {
+            aliveurls.splice(aliveurls[index], 1)
+            break
+        }
+    }
+}
+function removeFromDead(url_){
+    for (let index = 0; index < deadurls.length; index++) {
+        if (deadurls[index]==(url_)) {
+            deadurls.splice(deadurls[index], 1)
+            break
+        }
+    }
+}
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 //function http_error_handler(error)
   //  return error.code
+
 //https://stackoverflow.com/questions/3710204/how-to-check-if-a-string-is-a-valid-json-string-in-javascript-without-using-try
+
 function tryParseJSON (jsonString){
     try {
         var o = JSON.parse(jsonString);
@@ -51,7 +78,7 @@ function Clear()
     Display();
 }
 
-async function NumClick(n)
+function NumClick(n)
 {
     if (value == 0)
         value = n;
@@ -61,10 +88,10 @@ async function NumClick(n)
         value += n;
     }
 
-    await Display();
+    Display();
 }
 
-async function Plus()
+function Plus()
 {
     // if we have an outstanding operation resolve it
     if (operation != '')
@@ -74,7 +101,7 @@ async function Plus()
     value = 0;
     operation = '+';
 
-    await Display();
+    Display();
 }
 
 function Minus()
@@ -107,7 +134,7 @@ function Divide(){
 
     x = value;
     value = 0;
-    operation = '÷';
+    operation = '/';
 
      Display();
 }
@@ -118,7 +145,7 @@ function Exponent(){
 
     x = value;
     value = 0;
-    operation = 'x^y';
+    operation = '^';
 
      Display();
 }
@@ -134,8 +161,15 @@ function Modulus(){
      Display();
 }
 
-async function Equals()
+function Equals()
 {
+    //retry dead urls when no alive urls left  
+    if(!aliveurls[0]){
+        url = deadurls[0];
+    }
+    else 
+        url = aliveurls[0];
+
     if (operation == '')
         return;
 
@@ -144,20 +178,45 @@ async function Equals()
     if (operation == '+')
     {
         let xhttp = new XMLHttpRequest();
+        xhttp.open("GET",url+url_paths.add+"?x="+x+"&y="+y);
+
         try{
-            xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
+        xhttp.onreadystatechange = async function() {
+            if (this.readyState === 4){
+                if (this.status == 200){
+                //check if url in dead and remove if true
+                removeFromDead(url);
+                //checking if response is valid json 
                 var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
                 value = j.answer;
-                Display();
+                //check for error flag 
+                try {
+                    if(j.error==True)
+                    error = j.error;
+                }
+                catch (e) {
+                    console.log(e);
+                    throw Http.error
+                }
+                await Display();
+            }
+            else if (this.status !== 200) {
+                removeFromAlive(url);
+                deadurls.push(url);
+                url = aliveurls[0];
+                if(!aliveurls[0]){
+                    value = "retrying old url on next calc";
+                }
+                    else
+                    value = "error with url";
+                await Display();
+            }
             }
         };
-
-        xhttp.open("GET",url+"/add/"+"?x="+x+"&y="+y);
-        await xhttp.send();
+        xhttp.send();
     }
     catch(error){
         console.log(error);
@@ -167,19 +226,32 @@ async function Equals()
     else if (operation == '-')
     {
         let xhttp = new XMLHttpRequest();
+        xhttp.open("GET",url+url_paths.subtract+"?x="+x+"&y="+y);
+
         try{
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
+        xhttp.onreadystatechange = async function() {
+            if (this.readyState === 4){
+                if (this.status == 200){
                 var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
                 value = j.answer;
-                Display();
+                await Display();
+            }
+            else if (this.status !== 200) {
+                removeFromAlive(url);
+                deadurls.push(url);
+                url = aliveurls[0];
+                if(!aliveurls[0]){
+                    value = "retrying old url on next calc";
+                }
+                    else
+                    value = "error with url";
+                    await Display();
+            }
             }
         };
-
-        xhttp.open("GET",url+"/subtract/"+"?x="+x+"&y="+y);
         xhttp.send();
     }
     catch(error){
@@ -188,21 +260,34 @@ async function Equals()
         return;
     }
      else if (operation == '*')
-    {
+     {
         let xhttp = new XMLHttpRequest();
+        xhttp.open("GET",url+url_paths.multiply+"?x="+x+"&y="+y);
+
         try{
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
+        xhttp.onreadystatechange = async function() {
+            if (this.readyState === 4){
+                if (this.status == 200){
                 var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
                 value = j.answer;
-                Display();
+                await Display();
+            }
+            else if (this.status !== 200) {
+                removeFromAlive(url);
+                deadurls.push(url);
+                url = aliveurls[0];
+                if(!aliveurls[0]){
+                    value = "retrying old url on next calc";
+                }
+                    else
+                    value = "error with url";
+                    await Display();
+            }
             }
         };
-
-         xhttp.open("GET",url+"/multiply/"+"?x="+x+"&y="+y);
         xhttp.send();
     }
     catch(error){
@@ -210,22 +295,35 @@ async function Equals()
     }
         return;
     }
-    else if (operation == '÷')
+    else if (operation == '/')
     {
         let xhttp = new XMLHttpRequest();
+        xhttp.open("GET",url+url_paths.divide+"?x="+x+"&y="+y);
+
         try{
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
+        xhttp.onreadystatechange = async function() {
+            if (this.readyState === 4){
+                if (this.status == 200){
                 var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
                 value = j.answer;
-                Display();
+                await Display();
+            }
+            else if (this.status !== 200) {
+                removeFromAlive(url);
+                deadurls.push(url);
+                url = aliveurls[0];
+                if(!aliveurls[0]){
+                    value = "retrying old url on next calc";
+                }
+                else
+                value = "error with url";
+                await Display();
+            }
             }
         };
-
-         xhttp.open("GET",url+"/divide/"+"?x="+x+"&y="+y);
         xhttp.send();
     }
     catch(error){
@@ -233,22 +331,35 @@ async function Equals()
     }
         return;
     }
-    else if (operation == 'x^y')
+    else if (operation == '^')
     {
         let xhttp = new XMLHttpRequest();
+        xhttp.open("GET",url+url_paths.exponent+"?x="+x+"&y="+y);
+
         try{
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
+        xhttp.onreadystatechange = async function() {
+            if (this.readyState === 4){
+                if (this.status == 200){
                 var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
                 value = j.answer;
-                Display();
+                await Display();
+            }
+            else if (this.status !== 200) {
+                removeFromAlive(url);
+                deadurls.push(url);
+                url = aliveurls[0];
+                if(!aliveurls[0]){
+                    value = "retrying old url on next calc";
+                }
+                    else
+                    value = "error with url";
+                await Display();
+            }
             }
         };
-
-         xhttp.open("GET",url+"/exp/"+"?x="+x+"&y="+y);
         xhttp.send();
     }
     catch(error){
@@ -259,19 +370,32 @@ async function Equals()
     else if (operation == '%')
     {
         let xhttp = new XMLHttpRequest();
+        xhttp.open("GET",url+url_paths.modulus+"?x="+x+"&y="+y);
+
         try{
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
+        xhttp.onreadystatechange = async function() {
+            if (this.readyState === 4){
+                if (this.status == 200){
                 var j = tryParseJSON(this.response)
                 x=0;
                 y=0;
                 operation='';
                 value = j.answer;
-                Display();
+                await Display();
+            }
+            else if (this.status !== 200) {
+                removeFromAlive(url);
+                deadurls.push(url);
+                url = aliveurls[0];
+                if(!aliveurls[0]){
+                    value = "retrying old url on next calc";
+                }
+                else
+                value = "error with url";
+                await Display();
+            }
             }
         };
-
-         xhttp.open("GET",url+"/divide/"+"?x="+x+"&y="+y);
         xhttp.send();
     }
     catch(error){
@@ -339,9 +463,9 @@ body  {
     </div>
     <div>
         <button class="calc1" onclick="Clear();">C</button>
-        <button class="calc1" onclick="Modulus()">%</button>
-        <button class="calc1" onclick="PrevResult()">SavedResult</button>
-        <button class="calc1" onclick="Save()">Save</button>
+        <button class="calc1" onclick="Modulus();">%</button>
+        <button class="calc1" onclick="PrevResult();">SavedResult</button>
+        <button class="calc1" onclick="Save();">Save</button>
     </div>
     <div>
         <button class="calc1" onclick="NumClick(7);">7</button>
@@ -364,8 +488,8 @@ body  {
     <div>
         <button class="calc1" onclick="NumClick(0);">0</button>
         <button class="calc1" onclick="Multiply();">*</button>
-        <button class="calc1" onclick="Divide()">÷</button>
-        <button class="calc1" onclick="Exponent()">x^y</button>
+        <button class="calc1" onclick="Divide();">/</button>
+        <button class="calc1" onclick="Exponent();">^</button>
     </div>
 </div>
 </body>
