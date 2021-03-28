@@ -10,6 +10,7 @@ let x = 0;
 let y = 0;
 let operation = '';
 let error = '';
+let save_id = 0;
 
 //loading in proxies from urls.js, paths loaded in and used in xml request 
 var aliveurls = proxy_list;
@@ -178,7 +179,8 @@ function Equals()
     if (operation == '+')
     {
         let xhttp = new XMLHttpRequest();
-        xhttp.open("GET",url+url_paths.add+"?x="+x+"&y="+y);
+        //xhttp.open("GET",url+url_paths.add+"?x="+x+"&y="+y);
+        xhttp.open("GET",url+"?x="+x+"&y="+y);
 
         try{
         xhttp.onreadystatechange = async function() {
@@ -405,6 +407,15 @@ function Equals()
     }
 }
 
+function Save(){
+    let xhttp = new XMLHttpRequest();
+    //flask db url+route
+    xhttp.open("POST",flaskurl);
+
+    xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+    xmlhttp.send(JSON.stringify(value));
+}
 </script>
 
 <style type="text/css">
